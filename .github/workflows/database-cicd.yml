@@ -1,0 +1,148 @@
+# This workflow will help to Build/Create/Push Image.
+# During the Deployment it Create Database contianer on AKS
+
+name: Database-CICD
+
+on:
+  workflow_dispatch:
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: ${{ secrets.ACR_SERVER }}
+        username: ${{ secrets.REGISTRY_USERNAME }}
+        password: ${{ secrets.REGISTRY_PASSWORD }}
+
+    - run: |
+        docker build -t ${{ secrets.ACR_SERVER }}/backend-react-spring:${{ github.sha }} -f resources/db/Dockerfile .
+        docker push ${{ secrets.ACR_SERVER }}/backend-react-spring:${{ github.sha }}
+
+#############################################################
+# Deploy to Dev
+#############################################################
+  Dev:
+    needs: Build
+    runs-on: ubuntu-latest
+    env:
+      resourceGroupName: '${{ secrets.Dev_RESOURCE_GROUP }}'
+      clustername: '${{ secrets.DEV_CLUSTER_NAME }}'
+      
+    steps:
+      - uses: actions/checkout@main
+      
+      - uses: azure/setup-kubectl@v2.0
+
+      # Set the target AKS cluster.
+      - uses: Azure/aks-set-context@v1
+        with:
+          creds: "${{ secrets.AZURE_CREDENTIALS }}"
+          cluster-name: "${{ env.clustername }}"
+          resource-group: "${{ env.resourceGroupName }}"
+
+      - uses: Azure/k8s-create-secret@v1.1
+        with:
+          container-registry-url: ${{ secrets.ACR_SERVER }}
+          container-registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          secret-name: reactspring-k8s-secret
+
+      - uses: Azure/k8s-deploy@v1.4
+        with:
+          action: deploy
+          manifests: |
+            ${{ github.workspace }}/manifests/backend/namespace.yaml
+            ${{ github.workspace }}/manifests/backend/deployment.yaml
+            ${{ github.workspace }}/manifests/backend/service.yaml
+            ${{ github.workspace }}/manifests/backend/PersistentVolume.yaml
+          images: |
+             ${{ secrets.ACR_SERVER }}/backend-react-spring:${{ github.sha }}
+          imagepullsecrets: |
+            reactspring-k8s-secret
+
+#############################################################
+# Deploy to UAT
+#############################################################
+  UAT:
+    needs: Build
+    runs-on: ubuntu-latest
+    env:
+      resourceGroupName: '${{ secrets.UAT_RESOURCE_GROUP }}'
+      clustername: '${{ secrets.UAT_CLUSTER_NAME }}'
+      
+    steps:
+      - uses: actions/checkout@main
+      
+      - uses: azure/setup-kubectl@v2.0
+
+      # Set the target AKS cluster.
+      - uses: Azure/aks-set-context@v1
+        with:
+          creds: "${{ secrets.AZURE_CREDENTIALS }}"
+          cluster-name: "${{ env.clustername }}"
+          resource-group: "${{ env.resourceGroupName }}"
+
+      - uses: Azure/k8s-create-secret@v1.1
+        with:
+          container-registry-url: ${{ secrets.ACR_SERVER }}
+          container-registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          secret-name: reactspring-k8s-secret
+
+      - uses: Azure/k8s-deploy@v1.4
+        with:
+          action: deploy
+          manifests: |
+            ${{ github.workspace }}/manifests/backend/namespace.yaml
+            ${{ github.workspace }}/manifests/backend/deployment.yaml
+            ${{ github.workspace }}/manifests/backend/service.yaml
+            ${{ github.workspace }}/manifests/backend/PersistentVolume.yaml
+          images: |
+             ${{ secrets.ACR_SERVER }}/backend-react-spring:${{ github.sha }}
+          imagepullsecrets: |
+            reactspring-k8s-secret
+
+#############################################################
+# Deploy to PROD
+#############################################################
+  PROD:
+    needs: Build
+    runs-on: ubuntu-latest
+    env:
+      resourceGroupName: '${{ secrets.PROD_RESOURCE_GROUP }}'
+      clustername: '${{ secrets.PROD_CLUSTER_NAME }}'
+      
+    steps:
+      - uses: actions/checkout@main
+      
+      - uses: azure/setup-kubectl@v2.0
+
+      # Set the target AKS cluster.
+      - uses: Azure/aks-set-context@v1
+        with:
+          creds: "${{ secrets.AZURE_CREDENTIALS }}"
+          cluster-name: "${{ env.clustername }}"
+          resource-group: "${{ env.resourceGroupName }}"
+
+      - uses: Azure/k8s-create-secret@v1.1
+        with:
+          container-registry-url: ${{ secrets.ACR_SERVER }}
+          container-registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          container-registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          secret-name: reactspring-k8s-secret
+
+      - uses: Azure/k8s-deploy@v1.4
+        with:
+          action: deploy
+          manifests: |
+            ${{ github.workspace }}/manifests/backend/namespace.yaml
+            ${{ github.workspace }}/manifests/backend/deployment.yaml
+            ${{ github.workspace }}/manifests/backend/service.yaml
+            ${{ github.workspace }}/manifests/backend/PersistentVolume.yaml
+          images: |
+             ${{ secrets.ACR_SERVER }}/backend-react-spring:${{ github.sha }}
+          imagepullsecrets: |
+            reactspring-k8s-secret

@@ -1,0 +1,29 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: spring
+      tier: front
+  template:
+    metadata:        
+      labels:
+        app: spring
+        tier: front
+    spec:
+      containers:
+        - name: spring
+          image: reactspringdata.azurecr.io/frontend-react-spring
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 9080
+
+   
+      
+

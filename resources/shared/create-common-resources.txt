@@ -1,0 +1,52 @@
+#Run the Below Steps to Create the Common Storage Account and Azure Container Registry
+
+#Storage Account Container Name 
+containerName="terraformstate"
+storageAccountName="terraformstspringboot"
+location="southeastasia"
+#This the RG where Common Resources will be cerated
+resourceGroupName="devops-common-resources"
+#Update with your Susbription ID
+subID="UPDATEME:"
+#Azure Continer Name to be Created
+acr_Name="reactspringdata"
+storage-accountKey="<ADD Key Value of Storage Account>"
+
+#Login to Azure you can use interactive Login since it is one time activity 
+az login
+
+az account set --subscription $subID
+
+#Create Common ResourceGroup
+
+az group create -l $location -n $resourceGroupName
+
+#Create Common Storage Account/container for Terraform State
+
+az storage account create -n $storageAccountName -g $resourceGroupName -l $location --sku Standard_LRS
+
+
+#Create Terraform 
+
+az storage container create --name $containerName --account-name $storageAccountName --accouint-key $storage-accountKey
+
+#Create ACR
+
+az acr create --resource-group $resourceGroupName --name $acr_Name --admin-enabled true --sku Standard
+
+#Connect to Terraform and Create Remote Workspace for dev uat prod
+# Once Storage Account Created Update the Info under the IAC providers.tf file
+
+#Terraform to initialaize the Provider
+terraform Init
+
+# This commond to create Workspace which will store the tfstate file for respective Environment
+terraform workspace new dev
+
+# For UAT
+terraform workspace new uat
+
+#for Prod
+terraform workspace new prod
+
+
