@@ -12,3 +12,5 @@ Terraform is used to create the infra as code. **GitHub** and **GitHub Actions**
 ![image info](./Images/DevOpsInfraArchitecture.PNG)
 
 This document helps to understand the End-to-end solution of DevOps Implementation and its scope. The implemented solution is based on the Below use case.
+
+![image info](./Images/usecase.png)
